@@ -1,23 +1,37 @@
 {
-  "name": "GameSuite",
-  "version": "1.0.0",
-  "description": "A suite of classic board games digitized to stay in touch with friends",
-  "main": "server.js",
+  "name": "react-web",
   "scripts": {
-    "client-install": "npm install --prefix client",
-    "start": "node server.js",
-    "server": "nodemon server.js",
-    "client": "npm start --prefix client",
-    "dev": "concurrently \"yarn run server\" \"yarn run client\""
-  },
-  "author": "Beau Taylor-Ladd",
-  "license": "ISC",
-  "dependencies": {
-    "boardgame.io": "^0.40.0",
-    "esm": "^3.2.25",
-    "express": "^4.17.1"
+    "start": "react-scripts start",
+    "build": "parcel build src/index.html"
   },
   "devDependencies": {
-    "nodemon": "^2.0.2"
+    "parcel-bundler": "^1.11.0"
+  },
+  "alias": {
+    "boardgame.io": "../../dist/esm"
+  },
+  "browserslist": [
+    "last 1 Chrome versions"
+  ],
+  "dependencies": {
+    "@babel/core": "^7.6.2",
+    "@babel/preset-env": "^7.6.2",
+    "@babel/preset-react": "^7.0.0",
+    "boardgame.io": "^0.40.0",
+    "esm": "^3.2.25",
+    "parcel-plugin-svelte": "^4.0.4",
+    "react": ">=15",
+    "react-dom": "^16.9.0",
+    "react-router-dom": "^5.2.0",
+    "react-scripts": "3.0.1",
+    "styled-components": "^5.2.0",
+    "superagent": "^6.1.0",
+    "svelte": "^3.0.0",
+    "three": "^0.109.0"
+  },
+  "babel": {
+    "presets": [
+      "@babel/preset-react"
+    ]
   }
 }
