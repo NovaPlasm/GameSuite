@@ -22,24 +22,7 @@ const App = Client({
 const Multiplayer = () => (
   <div>
     <h1>Multiplayer</h1>
-    <div className="runner">
-      <div className="run">
-        <App matchID="multi" playerID="0" />
-        &lt;App playerID=&quot;0&quot;/&gt;
-      </div>
-      {/* <div className="run">
-        <App matchID="multi" playerID="1" />
-        &lt;App playerID=&quot;1&quot;/&gt;
-      </div>
-      <div className="run">
-        <App matchID="multi" playerID="2" />
-        &lt;App playerID=&quot;2&quot;/&gt;
-      </div>
-      <div className="run">
-        <App matchID="multi" playerID="3" />
-        &lt;App playerID=&quot;3&quot;/&gt;
-      </div> */}
-    </div>
+    <App matchID="multi" playerID="0" />
   </div>
 );
 
