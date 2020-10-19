@@ -9,10 +9,12 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
+import { Modal, Button } from 'react-bootstrap';
+import { roomLocation, doors, idToCard } from './boardHelpers';
 import BoardBackground from './assets/board2.png';
-import MissScarlett from './assets/MissScarlett.png';
-import cards from './assets/cards';
-const pieces = [MissScarlett];
+import { Mustard, Plum, Green, Peacock, Scarlett, White } from './assets/pieces';
+import { cards, cardTypes} from './assets/cards';
+const pieces = [Mustard, Plum, Green, Peacock, Scarlett, White];
 
 class Board extends React.Component {
   static propTypes = {
@@ -26,69 +28,62 @@ class Board extends React.Component {
     isPreview: PropTypes.bool,
   };
 
+  constructor(props) {
+    super(props);
+
+    console.log("player id",props.playerID);
+    
+    this.state = { notifiedTurn: false, rolled: false, showGuessModal: false, showChooseModal: false };
+  }
+
   onClick = id => {
     if (this.isActive(id)) {
-      this.props.moves.MovePlayer(id);
+      const currLoc = this.props.G.locations[this.props.ctx.playOrderPos];
+      const x1 = Math.floor(currLoc/25);
+      const y1 = Math.floor(currLoc - x1*25);
+      const x2 = Math.floor(id/25);
+      const y2 = Math.floor(id - x2*25);
+
+      const distance = Math.abs(x1 - x2) + Math.abs(y1 - y2);
+
+      this.props.moves.MovePlayer(id, distance);
     }
   };
 
   isActive(id) {
-    return this.props.isActive && this.props.G.cells[id] === null;
+    const currLoc = this.props.G.locations[this.props.ctx.playOrderPos];
+
+    // TODO: Move radius from doors
+    let roomLoc = roomLocation(id, this.props.playerID);
+
+    const x1 = Math.floor(currLoc/25);
+    const y1 = Math.floor(currLoc - x1*25);
+    const x2 = Math.floor(id/25);
+    const y2 = Math.floor(id - x2*25);
+
+    const distance = Math.abs(x1 - x2) + Math.abs(y1 - y2);
+    return this.props.isActive && this.props.G.cells[id] === null && this.props.G.dice >= distance;
+    
   }
 
   playerCards() {
     let ret = [];
-    ret.push(<span><img src={cards["Ballroom"]} /></span>);
-    ret.push(<span><img src={cards["Conservatory"]} /></span>)
-    ret.push(<span><img src={cards["Study"]} /></span>)
-    ret.push(<span><img src={cards["Knife"]} /></span>)
-    ret.push(<span><img src={cards["White"]} /></span>)
+    let gameCards = this.props.G.solutionAndCards.cards
+    for (let i = 0; i < gameCards.length; i++) {
+      if ((i % this.props.ctx.numPlayers).toString() === this.props.playerID) {
+        ret.push(<span><img alt={gameCards[i]} src={cards[gameCards[i]]} /></span>);
+      }
+    }
 
     return ret;
   }
 
   cheatSheet() {
-    let tbody = [<h3>Players</h3>];
-    const titles = [
-      {
-        name: "Suspects",
-        headers: [
-          "Col. Mustard",
-          "Prof. Plum",
-          "Mr. Green",
-          "Mrs. Peacock",
-          "Miss Scarlett",
-          "Mrs. White"
-        ]
-      },
-      {
-        name: "Weapons",
-        headers: [
-          "Knife",
-          "Candlestick",
-          "Revolver",
-          "Rope",
-          "Lead Pipe",
-          "Wrench"
-        ]
-      },
-      {
-        name: "Rooms",
-        headers: [
-          "Hall",
-          "Lounge",
-          "Dining Room",
-          "Kitchen",
-          "Ball Room",
-          "Conservatory",
-          "Library",
-          "Study"
-        ]
-      },
-    ];
+    let tbody = [<tr><th className="header">Players</th></tr>];
+    const titles = cardTypes;
     tbody.push(<tr><th></th><td>1</td><td>2</td><td>3</td><td>4</td><td>5</td><td>6</td></tr>);
     for (let section of titles) {
-      tbody.push(<h3>{section.name}</h3>);
+      tbody.push(<tr><th className="header">{section.name}</th></tr>);
       let rows = [];
       for (let cell of section.headers){
         let cells = [];
@@ -102,7 +97,76 @@ class Board extends React.Component {
     return tbody;
   }
 
+  showPlayers() {
+    let players = [];
+
+    // const { matchData } = this.props; //-- for lobby
+
+    const matchData = [{name: "Beau"}, {name: "Bob"}];
+
+    const cardFromId = idToCard;
+
+    for (let i = 0; i < this.props.ctx.numPlayers; i++) {
+      players.push(
+        <div key={i}>
+          <span className="btnContainer">
+            <h3>{matchData[i].name}{i.toString() === this.props.ctx.currentPlayer ? "'s turn" : ""}</h3>
+            {
+              i.toString() === this.props.playerID ? (
+                <>
+                  <Button disabled={i.toString() !== this.props.ctx.currentPlayer} onClick={() => this.setGuessModalShow(true)}>Guess</Button>
+                  <Button disabled={i.toString() !== this.props.ctx.currentPlayer}>Accusation</Button>
+                </>
+              ) : null
+            }
+          </span>
+          <span className="imgContainer">
+            <img alt={cardFromId[i]} src={cards[cardFromId[i]]} />
+          </span>
+        </div>
+      );
+    }
+
+    return players;
+  }
+
+  setModalShow(show) {
+    this.setState({showModal: show});
+  }
+
+  onDiceRoll() {
+    this.props.moves.RollDice();
+    this.setState({rolled: true});
+  }
+
+  setGuessModalShow(show) {
+    this.setState({showGuessModal: show});
+  }
+
+  onGuessChosen(suspect, weapon, room) {
+    this.setGuessModalShow(false);
+    this.props.moves.MakeGuess(suspect, weapon, room);
+  }
+
+  setChooseModalShow(show) {
+    this.setState({showChooseModal: show});
+  }
+
+  onCardChosen(card) {
+    this.setChooseModalShow(false);
+    this.props.moves.ChooseOrPass(card);
+  }
+
   render() {
+    console.log(this.props);
+
+    if (!this.state.notifiedTurn && this.props.playerID === this.props.ctx.currentPlayer) {
+      this.setModalShow(true);
+      this.setState({notifiedTurn: true});
+    } else if (this.props.playerID !== this.props.ctx.currentPlayer && this.state.notifiedTurn) this.setState({ notifiedTurn: false, rolled: false});
+
+    if (!this.state.showChooseModal && this.props.ctx.activePlayers && this.props.ctx.activePlayers[this.props.playerID] === "chooseOrPass") this.setChooseModalShow(true);
+
     let tbody = [];
     for (let i = 0; i < 25; i++) {
       let cells = [];
@@ -119,77 +183,317 @@ class Board extends React.Component {
             } : null}
             onClick={() => this.onClick(id)}
           >
-            
           </td>
         );
       }
       tbody.push(<tr key={i}>{cells}</tr>);
     }
 
-    let disconnected = null;
+    
     if (this.props.isMultiplayer && !this.props.isConnected) {
-      disconnected = <div>Disconnected!</div>;
+      console.log('Disconnected!');
     }
 
-    let winner = null;
     if (this.props.ctx.gameover) {
       console.log(this.props.ctx.gameover.winner)
     }
 
-    let player = null;
-    if (this.props.playerID) {
-      player = <div id="player">Player: {this.props.playerID}</div>;
-    }
-
-    if (this.props.isPreview) {
-      disconnected = player = null;
-    }
-
     return (
-      <GameContainer>
-        <Players>
-          <div>
-            <h3>Player 1</h3>
-            <span><img src={cards["Mustard"]} /></span>
-          </div>
-          <div>
-            <h3>Player 2's turn</h3>
-            <span><img src={cards["Plum"]} /></span>
-          </div>
-          <div>
-            <h3>Player 3</h3>
-            <span><img src={cards["Green"]} /></span>
-          </div>
-          <div>
-            <h3>Player 4</h3>
-            <span><img src={cards["Peacock"]} /></span>
-          </div>
-          <div>
-            <h3>Player 5</h3>
-            <span><img src={cards["Scarlett"]} /></span>
-          </div>
-          <div>
-            <h3>Player 6</h3>
-            <span><img src={cards["White"]} /></span>
-          </div>
-        </Players>
-        <Div>
-          <table id="board">
-            <tbody>{tbody}</tbody>
-          </table>
-        </Div>
-        <Sheet>
-          <table>
-            <tbody>{this.cheatSheet()}</tbody>
-          </table>
-        </Sheet>
-        <Cards>
-          {this.playerCards()}
-        </Cards>
-      </GameContainer>
+      <>
+        <GameContainer>
+          <Players>
+            { this.showPlayers() }
+          </Players>
+          <Div>
+            <table id="board">
+              <tbody>{tbody}</tbody>
+            </table>
+          </Div>
+          <Sheet>
+            <table>
+              <tbody>{ this.cheatSheet() }</tbody>
+            </table>
+          </Sheet>
+          <Cards>
+            { this.playerCards() }
+          </Cards>
+        </GameContainer>
+        <BeginTurnPopup
+          show={this.state.showModal}
+          rolled={this.state.rolled}
+          diceVal={this.props.G.dice}
+          onRoll={() => this.onDiceRoll()}
+          onHide={() => this.setModalShow(false)}
+        />
+        <GuessPopup
+          show={this.state.showGuessModal}
+          onHide={(suspect, weapon, room) => this.onGuessChosen(suspect, weapon, room)}
+        />
+        <ChooseOrPassPopup
+          show={this.state.showChooseModal}
+          guessedCards={this.props.G.guessedCards}
+          onHide={(card) => this.onCardChosen(card)}
+        />
+      </>
     );
   }
 }
+
+function BeginTurnPopup(props) {
+  return (
+    <Modal
+      {...props}
+      size="lg"
+      aria-labelledby="contained-modal-title-vcenter"
+      centered
+    >
+      <Modal.Header closeButton>
+        <Modal.Title id="contained-modal-title-vcenter">
+          It's your turn!
+        </Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        {
+          props.rolled ? (
+            <p>
+              You rolled a {props.diceVal}!  Go ahead and move where you want on the board.
+            </p>
+          ) : (
+            <p>
+              Roll your dice if you want to move, or you can go straight to making a guess!
+            </p>
+          )
+        }
+        
+      </Modal.Body>
+      <Modal.Footer>
+        { props.rolled ? null : <Button onClick={props.onRoll}>Roll Dice</Button> }
+        <Button onClick={props.onHide}>Close</Button>
+      </Modal.Footer>
+    </Modal>
+  );
+}
+
+class GuessPopup extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      chosenSuspect: "Blank", chosenWeapon: "Blank", chosenRoom: "Blank",
+      expandSuspect: false, expandWeapon: false, expandRoom: false
+    };
+  }
+
+  displaySuspects() {
+    let ret = []
+    const suspects = cardTypes[0].short;
+
+    if (this.state.expandSuspect) {
+      for (let suspect of suspects) {
+        ret.push(<span><img className="enableHover" onClick={() => this.setState({chosenSuspect: suspect, expandSuspect: false})} alt={suspect} src={cards[suspect]} /></span>);
+      }
+    } else {
+      ret.push(<span><img onClick={() => this.setState({expandSuspect: true, expandWeapon: false, expandRoom: false})} alt={this.state.chosenSuspect} src={cards[this.state.chosenSuspect]} /></span>);
+    }
+
+    return ret;
+  }
+
+  displayWeapons() {
+    let ret = []
+    const weapons = cardTypes[1].short;
+
+    if (this.state.expandWeapon) {
+      for (let weapon of weapons) {
+        ret.push(<span><img className="enableHover" onClick={() => this.setState({chosenWeapon: weapon, expandWeapon: false})} alt={weapon} src={cards[weapon]} /></span>);
+      }
+    } else {
+      ret.push(<span><img onClick={() => this.setState({expandSuspect: false, expandWeapon: true, expandRoom: false})} alt={this.state.chosenWeapon} src={cards[this.state.chosenWeapon]} /></span>);
+    }
+
+    return ret;
+  }
+
+  displayRooms() {
+    let ret = []
+    const rooms = cardTypes[2].short;
+
+    if (this.state.expandRoom) {
+      for (let room of rooms) {
+        ret.push(<span><img className="enableHover" onClick={() => this.setState({chosenRoom: room, expandRoom: false})} alt={room} src={cards[room]} /></span>);
+      }
+    } else {
+      ret.push(<span><img onClick={() => this.setState({expandSuspect: false, expandWeapon: false, expandRoom: true})} alt={this.state.chosenRoom} src={cards[this.state.chosenRoom]} /></span>);
+    }
+
+    return ret;
+  }
+
+  buttonClicked(chosenSuspect, chosenWeapon, chosenRoom) {
+    this.props.onHide(chosenSuspect, chosenWeapon, chosenRoom);
+    this.setState({
+      chosenSuspect: "Blank", chosenWeapon: "Blank", chosenRoom: "Blank",
+      expandSuspect: false, expandWeapon: false, expandRoom: false
+    });
+  }
+
+  render() {
+    const { chosenSuspect, chosenWeapon, chosenRoom } = this.state;
+
+    return (
+      <Modal
+        {...this.props}
+        size="lg"
+        aria-labelledby="contained-modal-title-vcenter"
+        centered
+        backdrop="static"
+      >
+        <Modal.Header>
+          <Modal.Title id="contained-modal-title-vcenter">
+            Make a guess!
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <ChooseCard>
+            <h4>Suspects</h4>
+            <span className="row">{ this.displaySuspects () }</span>
+            <h4>Weapons</h4>
+            <span className="row">{ this.displayWeapons () }</span>
+            <h4>Rooms</h4>
+            <span className="row">{ this.displayRooms () }</span>
+          </ChooseCard>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            disabled={ !(chosenSuspect !== "Blank" && chosenWeapon !== "Blank" && chosenRoom !== "Blank") }
+            onClick={ () => this.buttonClicked(chosenSuspect, chosenWeapon, chosenRoom) }
+          >
+            Confirm
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
+}
+
+class ChooseOrPassPopup extends React.Component {
+
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      chosenCard: null
+    };
+  }
+
+  displayCards() {
+    let ret = []
+    const guessedCards = this.props.guessedCards;
+
+    for (let card of guessedCards) {
+      ret.push(<span><img className={`enableHover ${this.state.chosenCard === card ? 'chosen' : null}`} onClick={() => this.setState({chosenCard: card})} alt={card} src={cards[card]} /></span>);
+    }
+
+    return ret;
+  }
+
+  buttonClicked(card) {
+    this.props.onHide(card);
+    this.setState({chosenCard: null});
+  }
+
+  render() {
+    const { chosenCard } = this.state;
+
+    return (
+      <Modal
+        {...this.props}
+        size="lg"
+        aria-labelledby="contained-modal-title-vcenter"
+        centered
+        backdrop="static"
+      >
+        <Modal.Header>
+          <Modal.Title id="contained-modal-title-vcenter">
+            Do you have any of these cards?
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <ChooseCard>
+            <h4>Choose one or pass!</h4>
+            <span className="row chosen">{ this.displayCards () }</span>
+          </ChooseCard>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button
+            disabled={ !(chosenCard) }
+            onClick={ () => this.buttonClicked(chosenCard) }
+          >
+            Confirm
+          </Button>
+          <Button
+            onClick={ () => this.buttonClicked("Pass") }
+          >
+            I don't have any!
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    );
+  }
+}
+
+const ChooseCard = styled.section`
+  display: grid;
+  grid-template-rows: 30px 1fr 30px 1fr 30px 1fr;
+
+  h4 {
+    font-size: 20px;
+  }
+
+  .row {
+    position: relative;
+    margin-bottom: 10px;
+    margin-left: 0;
+
+    &.chosen {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-evenly;
+      margin-top: 20px;
+    }
+
+    span {
+      width: 80px;
+      height: 125px;
+      margin: 0 5px;
+
+      img {
+        width: 80px;
+        transition: width 0.6s ease-in-out, top 0.6s ease-in-out, box-shadow 0.6s ease-in-out;
+        top: 0;
+        position: initial;
+
+        &.chosen {
+          box-shadow: 0px 0px 10px 10px rgba(251,255,0,0.54);
+        }
+      }
+
+      &:hover {
+        .enableHover {
+          position: absolute;
+          width: 200px;
+          top: -150px;
+          z-index: 2;
+
+          &.chosen {
+            box-shadow: 0px 0px 20px 20px rgba(251,255,0,0.54);
+          }
+        }
+      }
+    }
+  }
+`;
 
 const GameContainer = styled.section`
   display: grid;
@@ -220,11 +524,17 @@ const Players = styled.div`
     img {
       position: absolute;
       width: 93px;
-      right: 0;
+      right: 15px;
       transition: width 0.6s ease-in-out, right 0.6s ease-in-out;
     }
 
-    span:hover {
+    .btnContainer {
+      button {
+        margin-top: 10px;
+      }
+    }
+
+    .imgContainer:hover {
       img {
         position: absolute;
         width: 200px;
@@ -243,9 +553,11 @@ const Sheet = styled.div`
   height: 950px;
   overflow-y: scroll;
 
-  h3 {
+  .header {
+    font-size: 20px;
     margin-left: 5px;
     margin-bottom: 0px;
+    padding-top: 15px;
   }
 
   th {
@@ -283,6 +595,7 @@ const Cards = styled.div`
 
   span {
     width: 125px;
+    height: 194px;
     margin: 0 10px;
 
     &:hover {
@@ -315,8 +628,11 @@ const Div = styled.div`
     background: transparent;
 
 
-    &.active:hover {
-      background-color: rgba(238, 255, 255, 0.3);
+    &.active {
+      background-color: rgba(87, 173, 104, 0.3);
+      &:hover {
+        background-color: rgba(238, 255, 255, 0.3);
+      }
     }
   }
 `;

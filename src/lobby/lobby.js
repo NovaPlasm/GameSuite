@@ -8,7 +8,7 @@ import './lobby.css';
 
 GameTicTacToe.minPlayers = 1;
 GameTicTacToe.maxPlayers = 2;
-GameClue.minPlayers = 3;
+GameClue.minPlayers = 2;
 GameClue.maxPlayers = 6;
 
 const hostname = window.location.hostname;

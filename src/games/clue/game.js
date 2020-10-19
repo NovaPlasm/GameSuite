@@ -1,31 +1,43 @@
-import { ActivePlayers } from 'boardgame.io/core';
+// import { ActivePlayers } from 'boardgame.io/core';
+import { doors, rooms, starts, cards, roomLocation, playerLocations, idToCard } from './boardHelpers';
 
-function doors() {
+function shuffledCards() {
+  let { suspects, weapons, rooms } = cards();
+  
+  // Shuffle suspects
+  for(let i = suspects.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * i);
+    const temp = suspects[i];
+    suspects[i] = suspects[j];
+    suspects[j] = temp;
+  }
+
+  // Shuffle weapons
+  for(let i = weapons.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * i);
+    const temp = weapons[i];
+    weapons[i] = weapons[j];
+    weapons[j] = temp;
+  }
+
+  // Shuffle rooms
+  for(let i = rooms.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * i);
+    const temp = rooms[i];
+    rooms[i] = rooms[j];
+    rooms[j] = temp;
+  }  
+
+  // Grab solution cards
+  const solution = [suspects.pop(), weapons.pop(), rooms.pop()];
+
   return {
-    "Conservatory": [[19,4]],
-    "Ballroom": [[19,8], [17,9], [17,14], [19,15]],
-    "Kitchen": [[18,19]],
-    "Dining Room": [[12,16],[9,17]],
-    "Billiard Room": [[15,5],[12,1]],
-    "Library": [[10,3],[8,6]],
-    "Study": [[3,6]],
-    "Hall": [[4,9],[6,11],[6,12]],
-    "Lounge": [[5,17]]
+    solution,
+    cards: suspects.concat(weapons, rooms)
   };
 }
 
-function starts() {
-  return {
-    "Prof. Plum": [5,0],
-    "Mrs. Peacock": [18,0],
-    "Mr. Green": [24,9],
-    "Mrs. White": [24,14],
-    "Col. Mustard": [7,23],
-    "Miss. Scarlett": [0,16]
-  }
-}
-
-function activeCells() {
+function activeCells(numPlayers) {
   let cells = new Array(25).fill("");
 
   // for (let i = 0; i < 25; i++) {
@@ -57,65 +69,73 @@ function activeCells() {
   cells[24*25 + 9] = cells[23*25 + 14] = cells[23*25 + 15] = cells[24*25 + 14] = null;
   cells[7*25 + 23] = cells[17*25 + 23] = null;
 
-  for (const [_, coords] of Object.entries(doors())) {
+  for (const [, coords] of Object.entries(doors())) {
     for (let coord of coords) {
       let [i, j] = coord;
       cells[i*25 + j] = null;
     }
   }
 
-  return cells;
-}
-
-function playerLocations() {
-  let locations = new Array(6);
-  let i = 0;
-  starts = starts();
-  for (const value in starts) {
-    locations[i] = starts[value][0]*25 + starts[value][1];
-    i += 1;
+  const playerLoc = playerLocations();
+  for (let i = 0; i < numPlayers; i++) {
+    console.log('player',i)
+    cells[playerLoc[i]] = i.toString();
   }
 
-  return locations;
+  return cells;
 }
 
 function IsVictory(cells) {
   return false;
 }
 
-function ClickCell(G, ctx, id) {
-  const cells = [...G.cells];
+function MakeGuess(G, ctx, suspect, weapon, room) {
 
-  if (cells[id] === null) {
-    cells[id] = ctx.currentPlayer;
-    return { ...G, cells };
-  }
-}
-
-function MakeGuess(G, ctx) {
   // guard to set nextPlayer to '0' if needed
-  const nextPlayer = (ctx.playOrderPos === ctx.playOrder.length ? 0 : ctx.playOrderPos + 1);
-  G.nextPlayer = nextPlayer;
+  const nextPlayer = (ctx.playOrderPos + 1 === ctx.playOrder.length ? 0 : ctx.playOrderPos + 1);
 
+  const guessedCards = [suspect, weapon, room];
+  
   ctx.events.setActivePlayers({
     value: {
       [nextPlayer]: {stage: 'chooseOrPass', moveLimit: 1}
     }
   });
+
+  const effectedPlayer = idToCard.indexOf(suspect);
+
+  if (effectedPlayer < ctx.playOrder.length) {
+    let cells = [...G.cells];
+    let locations = [...G.locations];
+
+    const door = doors()[room][0];
+    console.log(door);
+    const newLoc = roomLocation(door[0]*25 + door[1], effectedPlayer.toString())
+
+    cells[locations[effectedPlayer]] = null;
+    cells[newLoc] = effectedPlayer;
+    locations[effectedPlayer] = newLoc;
+
+    return { ...G, cells, locations };
+  } else {
+    return { ...G, nextPlayer, guessedCards}
+  }
 }
 
-function ChooseOrPass(G, ctx) {
-  let card = prompt("Card index? Or -1");
-
-  console.log(card)
+function ChooseOrPass(G, ctx, card) {
+  console.log('chooseorpass');
+  const [ suspect, weapon, room ] = G.guessedCards;
+  console.log("cards:",suspect, weapon, room);
+  console.log("chosen:",card)
   const currentPlayer = G.nextPlayer;
+  console.log('currentplayer',currentPlayer,'playeroder',ctx.playOrder.length)
   const nextPlayer = (currentPlayer + 1 === ctx.playOrder.length ? 0 : currentPlayer + 1);
   G.nextPlayer = nextPlayer;
 
-  if (card === "-1") {
-    // console.log(ctx.playOrderPos, nextPlayer);
-    if (ctx.playOrderPos == nextPlayer) {
+  if (card === "Pass") {
+    if (ctx.playOrderPos === nextPlayer) {
       ctx.events.endStage();
+      ctx.events.endTurn();
       // ctx.events.setActivePlayers({
       //   value: {
       //     [G.originalPlayer.toString()]: {stage: 'chooseOrPass', moveLimit: 1}
@@ -132,33 +152,44 @@ function ChooseOrPass(G, ctx) {
     });
   } else {
     G.showedCards[ctx.playOrderPos] = {[currentPlayer]: card};
+    ctx.events.endStage();
+    ctx.events.endTurn();
   }
 }
 
-function MovePlayer(G, ctx, id) {
-  const cells = [...G.cells];
+function MovePlayer(G, ctx, id, distance) {
+  let cells = [...G.cells];
   let locations = [...G.locations];
+  let dice = G.dice - distance;
 
   if (cells[id] === null) {
     cells[locations[ctx.currentPlayer]] = null;
+
+    const doorLocs = Object.keys(rooms());
+
+    if (doorLocs.includes(id.toString())) {
+      id = roomLocation(id, ctx.currentPlayer);
+    }
+
     cells[id] = ctx.currentPlayer;
     locations[ctx.currentPlayer] = id;
-    return { ...G, cells, locations };
+    return { ...G, cells, locations, dice };
   }
 }
-
 
 const Clue = {
   name: 'clue',
 
-  setup: () => ({
-    cells: activeCells(),
+  setup: (ctx) => ({
+    cells: activeCells(ctx.numPlayers),
     locations: playerLocations(),
-    showedCards: new Array(6)
+    showedCards: new Array(ctx.numPlayers),
+    solutionAndCards: shuffledCards(),
+    guessedCards: new Array(3)
   }),
 
   moves: {
-    // RollDice,
+    RollDice: (G, ctx) => ({ ...G, dice: ctx.random.D6() }),
     MovePlayer,
     MakeGuess,
     // MakeAccusation
@@ -183,18 +214,6 @@ const Clue = {
     if (G.cells.filter(c => c === null).length === 0) {
       return { draw: true };
     }
-  },
-
-  ai: {
-    enumerate: G => {
-      let r = [];
-      for (let i = 0; i < 9; i++) {
-        if (G.cells[i] === null) {
-          r.push({ move: 'clickCell', args: [i] });
-        }
-      }
-      return r;
-    },
   },
 };
 
