@@ -1,37 +1,50 @@
 function doors() {
   return {
-    "Conservatory": [[19,4]],
+    "Conservatory": [[19,4],[5,23]],
     "Ballroom": [[19,8], [17,9], [17,14], [19,15]],
-    "Kitchen": [[18,19]],
-    "Dining Room": [[12,16],[9,17]],
-    "Billiard Room": [[15,5],[12,1]],
+    "Kitchen": [[18,19],[3,0]],
+    "Dining": [[12,16],[9,17]],
+    "Billiards": [[15,5],[12,1]],
     "Library": [[10,3],[8,6]],
-    "Study": [[3,6]],
+    "Study": [[3,6],[23,18]],
     "Hall": [[4,9],[6,11],[6,12]],
-    "Lounge": [[5,17]]
+    "Lounge": [[5,17],[19,1]]
   };
 }
 
 function rooms() {
   return {
     479: "Conservatory",
+    148: "Conservatory",
     483: "Ballroom",
     434: "Ballroom",
     439: "Ballroom",
     490: "Ballroom",
     469: "Kitchen",
+    75:  "Kitchen",
     316: "Dining",
     242: "Dining",
     380: "Billiards",
     301: "Billiards",
     253: "Library",
     206: "Library",
-    81: "Study",
+    81:  "Study",
+    593: "Study",
     109: "Hall",
     161: "Hall",
     162: "Hall",
-    142: "Lounge"
+    142: "Lounge",
+    476: "Lounge"
   };
+}
+
+function diagonals() {
+  return {
+    "Study": 75,
+    "Lounge": 148,
+    "Conservatory": 476,
+    "Kitchen": 593
+  }
 }
 
 function starts() {
@@ -49,7 +62,7 @@ function cards() {
   return {
     suspects: ["Green", "Mustard", "Peacock", "Plum", "Scarlett", "White"],
     weapons: ["Candlestick", "Knife", "Pipe", "Revolver", "Rope", "Wrench"],
-    rooms: ["Ballroom", "Billiard", "Conservatory", "Dining", "Hall", "Kitchen", "Library", "Lounge", "Study"]
+    rooms: ["Ballroom", "Billiards", "Conservatory", "Dining", "Hall", "Kitchen", "Library", "Lounge", "Study"]
   }
 }
 
@@ -82,6 +95,7 @@ function roomLocation(door, playerID) {
     case "Dining": playerLoc = (11*25 + 19); break;
     case "Lounge": playerLoc = (2*25 + 19); break;
     case "Hall": playerLoc = (2*25 + 10); break;
+    default: playerLoc = 0;
   }
 
   if (playerID < 3) {
@@ -114,4 +128,25 @@ const idToCard = [
   "White"
 ];
 
-export { doors, rooms, starts, cards, roomLocation, playerLocations, idToCard };
+function inRoom(currLoc, playerID) {
+  if (playerID < 3) {
+    currLoc -= parseInt(playerID);
+  } else {
+    currLoc -= (25 + parseInt(playerID));
+  }
+
+  switch (currLoc) {
+    case (1*25 + 2): return "Study";
+    case (7*25 + 2): return "Library";
+    case (14*25 + 1): return "Billiards";
+    case (21*25 + 2): return "Conservatory";
+    case (20*25 + 11): return "Ballroom";
+    case (21*25 + 20): return "Kitchen";
+    case (11*25 + 19): return "Dining";
+    case (2*25 + 19): return "Lounge";
+    case (2*25 + 10): return "Hall";
+    default: return "No";
+  }
+}
+
+export { doors, rooms, starts, cards, roomLocation, playerLocations, idToCard, inRoom, diagonals };

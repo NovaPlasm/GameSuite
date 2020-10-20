@@ -23,7 +23,7 @@ import Wrench from './wrench.png';
 
 const cards = {
   "Ballroom": Ballroom,
-  "Billiard": Billiard,
+  "Billiards": Billiard,
   "Blank": Blank,
   "Candlestick": Candlestick,
   "Conservatory": Conservatory,
@@ -91,6 +91,7 @@ const cardTypes = [
       "Hall",
       "Lounge",
       "Dining Room",
+      "Billiard Room",
       "Kitchen",
       "Ball Room",
       "Conservatory",
@@ -101,6 +102,7 @@ const cardTypes = [
       "Hall",
       "Lounge",
       "Dining",
+      "Billiards",
       "Kitchen",
       "Ballroom",
       "Conservatory",

@@ -1,5 +1,5 @@
 // import { ActivePlayers } from 'boardgame.io/core';
-import { doors, rooms, starts, cards, roomLocation, playerLocations, idToCard } from './boardHelpers';
+import { doors, rooms, cards, roomLocation, playerLocations, idToCard, inRoom } from './boardHelpers';
 
 function shuffledCards() {
   let { suspects, weapons, rooms } = cards();
@@ -78,7 +78,6 @@ function activeCells(numPlayers) {
 
   const playerLoc = playerLocations();
   for (let i = 0; i < numPlayers; i++) {
-    console.log('player',i)
     cells[playerLoc[i]] = i.toString();
   }
 
@@ -108,6 +107,7 @@ function MakeGuess(G, ctx, suspect, weapon, room) {
     let cells = [...G.cells];
     let locations = [...G.locations];
 
+    console.log(room,doors());
     const door = doors()[room][0];
     console.log(door);
     const newLoc = roomLocation(door[0]*25 + door[1], effectedPlayer.toString())
@@ -116,19 +116,28 @@ function MakeGuess(G, ctx, suspect, weapon, room) {
     cells[newLoc] = effectedPlayer;
     locations[effectedPlayer] = newLoc;
 
-    return { ...G, cells, locations };
+    return { ...G, cells, locations, nextPlayer, guessedCards };
   } else {
     return { ...G, nextPlayer, guessedCards}
   }
 }
 
+function MakeAccusation(G, ctx, suspect, weapon, room) {
+
+  const [solSuspect, solWeapon, solRoom] = G.solutionAndCards.solution
+  if (solSuspect === suspect && solWeapon === weapon && solRoom === room) ctx.events.endGame(ctx.currentPlayer)
+  else {
+    ctx.events.endTurn();
+    let accusedPlayers = [...G.accusedPlayers];
+    accusedPlayers[ctx.currentPlayer] = ctx.currentPlayer;
+
+    return { ...G, accusedPlayers}
+  }
+  return { ...G };
+}
+
 function ChooseOrPass(G, ctx, card) {
-  console.log('chooseorpass');
-  const [ suspect, weapon, room ] = G.guessedCards;
-  console.log("cards:",suspect, weapon, room);
-  console.log("chosen:",card)
   const currentPlayer = G.nextPlayer;
-  console.log('currentplayer',currentPlayer,'playeroder',ctx.playOrder.length)
   const nextPlayer = (currentPlayer + 1 === ctx.playOrder.length ? 0 : currentPlayer + 1);
   G.nextPlayer = nextPlayer;
 
@@ -153,28 +162,40 @@ function ChooseOrPass(G, ctx, card) {
   } else {
     G.showedCards[ctx.playOrderPos] = {[currentPlayer]: card};
     ctx.events.endStage();
-    ctx.events.endTurn();
   }
 }
 
 function MovePlayer(G, ctx, id, distance) {
   let cells = [...G.cells];
   let locations = [...G.locations];
-  let dice = G.dice - distance;
+  const doorLocs = Object.keys(rooms());
+  const inDoor = doorLocs.includes(id.toString());
+
+  let dice = G.dice - (inDoor ? G.dice : distance);
 
   if (cells[id] === null) {
     cells[locations[ctx.currentPlayer]] = null;
 
-    const doorLocs = Object.keys(rooms());
-
-    if (doorLocs.includes(id.toString())) {
+    if (inDoor) {
       id = roomLocation(id, ctx.currentPlayer);
     }
 
     cells[id] = ctx.currentPlayer;
     locations[ctx.currentPlayer] = id;
+    
+    let room = inRoom(id, ctx.currentPlayer);
+    if (room === "No") {
+      ctx.events.endTurn();
+    }
+
     return { ...G, cells, locations, dice };
   }
+}
+
+function ClearShowedCards(G, ctx) {
+  ctx.events.endTurn();
+
+  return {...G, showedCards: new Array(ctx.numPlayers).fill(null)}
 }
 
 const Clue = {
@@ -182,8 +203,9 @@ const Clue = {
 
   setup: (ctx) => ({
     cells: activeCells(ctx.numPlayers),
+    accusedPlayers: new Array(ctx.numPlayers),
     locations: playerLocations(),
-    showedCards: new Array(ctx.numPlayers),
+    showedCards: new Array(ctx.numPlayers).fill(null),
     solutionAndCards: shuffledCards(),
     guessedCards: new Array(3)
   }),
@@ -192,7 +214,8 @@ const Clue = {
     RollDice: (G, ctx) => ({ ...G, dice: ctx.random.D6() }),
     MovePlayer,
     MakeGuess,
-    // MakeAccusation
+    ClearShowedCards,
+    MakeAccusation
   },
 
   turn: {
