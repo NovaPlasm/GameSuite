@@ -15,7 +15,7 @@ import Board from './board';
 const App = Client({
   game: Clue,
   board: Board,
-  debug: true,
+  debug: false,
   multiplayer: Local(),
 });
 

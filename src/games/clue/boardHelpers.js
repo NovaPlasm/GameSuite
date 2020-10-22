@@ -101,7 +101,7 @@ function roomLocation(door, playerID) {
   if (playerID < 3) {
     playerLoc += parseInt(playerID);
   } else {
-    playerLoc += 25 + parseInt(playerID);
+    playerLoc += 24 + parseInt(playerID);
   }
 
   return playerLoc;

@@ -8,8 +8,6 @@
 
 import Singleplayer from './singleplayer';
 import Multiplayer from './multiplayer';
-import Spectator from './spectator';
-import Authenticated from './authenticated';
 
 const routes = [
   {
@@ -19,19 +17,9 @@ const routes = [
   },
   {
     path: '/tic-tac-toe/multiplayer',
-    text: 'Multiplayer',
+    text: 'Local Multiplayer',
     component: Multiplayer,
-  },
-  {
-    path: '/tic-tac-toe/authenticated',
-    text: 'Authenticated',
-    component: Authenticated,
-  },
-  {
-    path: '/tic-tac-toe/spectator',
-    text: 'Spectator',
-    component: Spectator,
-  },
+  }
 ];
 
 export default { routes };

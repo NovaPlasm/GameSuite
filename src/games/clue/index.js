@@ -7,19 +7,19 @@
  */
 
 import Multiplayer from './multiplayer';
-import Spectator from './spectator';
+import Lobby from './lobby';
 
 const routes = [
   {
     path: '/clue/',
-    text: 'Multiplayer',
-    component: Multiplayer,
+    text: 'Online Multiplayer',
+    component: Lobby,
   },
   {
-    path: '/clue/spectator',
-    text: 'Spectator',
-    component: Spectator,
-  },
+    path: '/clue/multiplayer',
+    text: 'Test Multiplayer',
+    component: Multiplayer,
+  }
 ];
 
 export default { routes };

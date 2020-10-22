@@ -731,11 +731,29 @@ const ChooseCard = styled.section`
 
 const GameContainer = styled.section`
   display: grid;
-  grid-template-columns: 275px 950px 1fr;
+  @media only screen and (min-width: 2060px) {
+    grid-template-columns: 275px 950px 1fr;
+    width: 1650px;
+    color: red;
+  }
+  @media only screen and (max-width: 2060px) and (min-width: 1875px) {
+    grid-template-columns: 275px 750px 1fr;
+    width: 1450px;
+    color: blue;
+  }
+  @media only screen and (max-width: 1875px) and (min-width: 1675px) {
+    grid-template-columns: 275px 550px 1fr;
+    width: 1250px;
+    color: green;
+  }
+  @media only screen and (max-width: 1675px) and (min-width: 1375px) {
+    grid-template-columns: 275px 250px 1fr;
+    width: 950px;
+    color: yellow;
+  }
   grid-gap: 10px 20px;
   margin-left: auto;
   margin-right: auto;
-  width: 1650px;
 `;
 
 const Players = styled.div`
@@ -784,7 +802,18 @@ const Sheet = styled.div`
   flex-direction: column;
   background-color: rgba(204, 204, 204, 0.5);
   padding: 0 20px;
-  height: 950px;
+  @media only screen and (min-width: 2060px) {
+    height: 950px;
+  }
+  @media only screen and (max-width: 2060px) and (min-width: 1080px) {
+    height: 750px;
+  }
+  @media only screen and (max-width: 1875px) and (min-width: 1675px) {
+    height: 550px;
+  }
+  @media only screen and (max-width: 1675px) and (min-width: 1375px) {
+    height: 350px;
+  }
   overflow-y: scroll;
 
   .header {
@@ -846,15 +875,47 @@ const Cards = styled.div`
 const Div = styled.div`
   background-image: url(${BoardBackground});
   background-size: cover;
-  width: 900px;
-  height: 900px;
-  padding-top: 38px;
-  padding-left: 48px;
+  @media only screen and (min-width: 2060px) {
+    width: 900px;
+    height: 900px;
+    padding-top: 38px;
+    padding-left: 48px;
+  }
+  @media only screen and (max-width: 2060px) and (min-width: 1080px) {
+    width: 700px;
+    height: 700px;
+    padding-top: 30px;
+    padding-left: 40px;
+  }
+  @media only screen and (max-width: 1875px) and (min-width: 1675px) {
+    width: 500px;
+    height: 500px;
+    padding-top: 21.5px;
+    padding-left: 27.5px;
+  }
+  @media only screen and (max-width: 1675px) and (min-width: 1375px) {
+    width: 200px;
+    height: 200px;
+  }
 
   td {
+    @media only screen and (min-width: 2060px) {
+      width: 35.5px;
+      height: 34.9px;
+    }
+    @media only screen and (max-width: 2060px) and (min-width: 1080px) {
+      width: 27.4px;
+      height: 27.2px;
+    }
+    @media only screen and (max-width: 1875px) and (min-width: 1675px) {
+      width: 19.6px;
+      height: 19.3px;
+    }
+    @media only screen and (max-width: 1675px) and (min-width: 1375px) {
+      width: 200px;
+      height: 200px;
+    }
     background: none;
-    width: 35.5px;
-    height: 34.9px;
     border: 3px solid rgba(0, 0, 0, 0);
     line-height: 0px;
     font-size: 10px;
