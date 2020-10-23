@@ -9,7 +9,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import { Modal, Button } from 'react-bootstrap';
+import { Modal, Button, Nav } from 'react-bootstrap';
 import { inRoom, doors, idToCard, diagonals } from './boardHelpers';
 import BoardBackground from './assets/board2.png';
 import { Mustard, Plum, Green, Peacock, Scarlett, White } from './assets/pieces';
@@ -36,7 +36,18 @@ class Board extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = { notifiedTurn: props.playerID === props.ctx.currentPlayer, showModal: props.playerID === props.ctx.currentPlayer && !props.G.accusedPlayers.includes(props.playerID), rolled: false, showGuessModal: false, showChooseModal: false, showCardModal: false, showAccusationModal: false, alreadyGuessed: false };
+    this.state = {
+      notifiedTurn: props.playerID === props.ctx.currentPlayer,
+      showModal: props.playerID === props.ctx.currentPlayer && !props.G.accusedPlayers.includes(props.playerID),
+      rolled: false,
+      showGuessModal: false,
+      showChooseModal: false,
+      showCardModal: false,
+      showAccusationModal: false,
+      alreadyGuessed: false,
+      showLog: true,
+      showSheet: false
+    };
   }
 
   onClick = id => {
@@ -102,6 +113,18 @@ class Board extends React.Component {
     return ret;
   }
 
+  playerCardTitles() {
+    let ret = [];
+    let gameCards = this.props.G.solutionAndCards.cards
+    for (let i = 0; i < gameCards.length; i++) {
+      if ((i % this.props.ctx.numPlayers).toString() === this.props.playerID) {
+        ret.push(gameCards[i]);
+      }
+    }
+
+    return ret;
+  }
+
   cheatSheet() {
     let tbody = [<tr key={0}><th className="header">Players</th></tr>];
     const titles = cardTypes;
@@ -124,7 +147,7 @@ class Board extends React.Component {
   notInRoom() {
     const currLoc = this.props.G.locations[this.props.ctx.playOrderPos];
     let room = inRoom(currLoc, this.props.playerID);
-    return room === "No"
+    return room === "No";
   }
 
   showPlayers() {
@@ -203,6 +226,23 @@ class Board extends React.Component {
     this.props.moves.ClearShowedCards();
   }
 
+  sheetTab(sheet) {
+    if (sheet === 'log') this.setState({showLog: true, showSheet: false});
+    else this.setState({showLog: false, showSheet: true});
+  }
+
+  gameLog() {
+    let tags = [];
+
+    const log = this.props.G.log;
+    for (let i = 0; i < log.length; i++) {
+      if (log[i].substr(0,2) === ';b') tags.push(<p><b>{log[i].substr(2)}</b></p>);
+      else tags.push(<p>{log[i]}</p>);
+    }
+
+    return tags;
+  }
+
   render() {
     if (this.props.ctx.gameover && this.state.showWinner == null) {
       this.setState({showWinner: this.props.ctx.gameover})
@@ -235,7 +275,6 @@ class Board extends React.Component {
             } : null}
             onClick={() => this.onClick(id)}
           >
-            {this.props.G.cells[id]}
           </td>
         );
       }
@@ -259,9 +298,23 @@ class Board extends React.Component {
             </table>
           </Div>
           <Sheet>
-            <table>
-              <tbody>{ this.cheatSheet() }</tbody>
-            </table>
+            <Nav fill variant="tabs" defaultActiveKey="gamelog">
+              <Nav.Item>
+                <Nav.Link eventKey="gamelog" onSelect={() => this.sheetTab('log')}>Game Log</Nav.Link>
+              </Nav.Item>
+              <Nav.Item>
+                <Nav.Link eventKey="cluesheet" onSelect={() => this.sheetTab('sheet')}>Clue Sheet</Nav.Link>
+              </Nav.Item>
+            </Nav>
+            <span className={`${this.state.showLog?'visible':'hidden'}`}>
+              <p><b>Game Started</b></p>
+              { this.gameLog() }
+            </span>
+            <span className={`${this.state.showSheet?'visible':'hidden'}`}>
+              <table>
+                <tbody>{ this.cheatSheet() }</tbody>
+              </table>
+            </span>
           </Sheet>
           <Cards>
             { this.playerCards() }
@@ -282,6 +335,7 @@ class Board extends React.Component {
         <ChooseOrPassPopup
           show={this.state.showChooseModal}
           guessedCards={this.props.G.guessedCards}
+          playerCards={this.playerCardTitles()}
           onHide={(card) => this.onCardChosen(card)}
         />
         <ShownCardPopup
@@ -308,6 +362,7 @@ function BeginTurnPopup({show, rolled, diceval, onRoll, onHide, otherprops}) {
   return (
     <Modal
       show={show}
+      onHide={onHide}
       {...otherprops}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
@@ -344,6 +399,7 @@ function WinnerPopup({show, winner, onHide, otherprops}) {
   return (
     <Modal
       show={show}
+      onHide={onHide}
       {...otherprops}
       size="lg"
       aria-labelledby="contained-modal-title-vcenter"
@@ -590,6 +646,8 @@ class ChooseOrPassPopup extends React.Component {
   render() {
     const { chosenCard } = this.state;
 
+    console.log(this.props.playerCards);
+
     return (
       <Modal
         {...this.props}
@@ -606,6 +664,7 @@ class ChooseOrPassPopup extends React.Component {
         <Modal.Body>
           <ChooseCard>
             <h4>Choose one or pass!</h4>
+            <p>(If you need a reminder, you have these cards: {this.props.playerCards.join(", ")})</p>
             <span className="row chosen">{ this.displayCards () }</span>
           </ChooseCard>
         </Modal.Body>
@@ -734,23 +793,22 @@ const GameContainer = styled.section`
   @media only screen and (min-width: 2060px) {
     grid-template-columns: 275px 950px 1fr;
     width: 1650px;
-    color: red;
   }
   @media only screen and (max-width: 2060px) and (min-width: 1875px) {
     grid-template-columns: 275px 750px 1fr;
     width: 1450px;
-    color: blue;
   }
+
   @media only screen and (max-width: 1875px) and (min-width: 1675px) {
     grid-template-columns: 275px 550px 1fr;
     width: 1250px;
-    color: green;
   }
-  @media only screen and (max-width: 1675px) and (min-width: 1375px) {
-    grid-template-columns: 275px 250px 1fr;
-    width: 950px;
-    color: yellow;
+
+  @media only screen and (max-width: 1675px) {
+    grid-template-columns: 275px 550px 1fr;
+    width: 1250px;
   }
+
   grid-gap: 10px 20px;
   margin-left: auto;
   margin-right: auto;
@@ -781,8 +839,14 @@ const Players = styled.div`
     }
 
     .btnContainer {
+      h3 {
+        font-size: 18px;
+      }
+
       button {
+        display: block;
         margin-top: 10px;
+        font-size: 12px;
       }
     }
 
@@ -805,16 +869,27 @@ const Sheet = styled.div`
   @media only screen and (min-width: 2060px) {
     height: 950px;
   }
+
   @media only screen and (max-width: 2060px) and (min-width: 1080px) {
     height: 750px;
   }
+
   @media only screen and (max-width: 1875px) and (min-width: 1675px) {
     height: 550px;
   }
-  @media only screen and (max-width: 1675px) and (min-width: 1375px) {
-    height: 350px;
+
+  @media only screen and (max-width: 1675px) {
+    height: 550px;
   }
-  overflow-y: scroll;
+
+  span {
+    overflow-y: scroll;
+
+    &.hidden {
+      display: none;
+      visibility: hidden;
+    }
+  }
 
   .header {
     font-size: 20px;
@@ -881,21 +956,26 @@ const Div = styled.div`
     padding-top: 38px;
     padding-left: 48px;
   }
+
   @media only screen and (max-width: 2060px) and (min-width: 1080px) {
     width: 700px;
     height: 700px;
     padding-top: 30px;
     padding-left: 40px;
   }
+
   @media only screen and (max-width: 1875px) and (min-width: 1675px) {
     width: 500px;
     height: 500px;
     padding-top: 21.5px;
     padding-left: 27.5px;
   }
-  @media only screen and (max-width: 1675px) and (min-width: 1375px) {
-    width: 200px;
-    height: 200px;
+
+  @media only screen and (max-width: 1675px) {
+    width: 500px;
+    height: 500px;
+    padding-top: 21.5px;
+    padding-left: 27.5px;
   }
 
   td {
@@ -903,25 +983,28 @@ const Div = styled.div`
       width: 35.5px;
       height: 34.9px;
     }
+
     @media only screen and (max-width: 2060px) and (min-width: 1080px) {
       width: 27.4px;
       height: 27.2px;
     }
+
     @media only screen and (max-width: 1875px) and (min-width: 1675px) {
       width: 19.6px;
       height: 19.3px;
     }
-    @media only screen and (max-width: 1675px) and (min-width: 1375px) {
-      width: 200px;
-      height: 200px;
+
+    @media only screen and (max-width: 1675px) {
+      width: 19.6px;
+      height: 19.3px;
     }
+
     background: none;
     border: 3px solid rgba(0, 0, 0, 0);
     line-height: 0px;
     font-size: 10px;
     box-sizing: border-box;
     background: transparent;
-
 
     &.active {
       background-color: rgba(87, 173, 104, 0.3);

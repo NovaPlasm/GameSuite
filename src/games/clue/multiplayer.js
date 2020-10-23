@@ -15,13 +15,12 @@ import Board from './board';
 const App = Client({
   game: Clue,
   board: Board,
-  debug: false,
+  debug: true,
   multiplayer: Local(),
 });
 
 const Multiplayer = () => (
   <div>
-    <h1>Multiplayer</h1>
     <App matchID="multi" playerID="0" />
   </div>
 );

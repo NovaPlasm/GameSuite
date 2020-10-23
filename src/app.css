@@ -47,3 +47,14 @@ a.active {
 .title {
   padding-left: 16px;
 }
+
+@media only screen and (max-width: 1675px) {
+  .sidebar {
+    display: none;
+    visibility: hidden;
+  }
+
+  .content {
+    left: 0 !important;
+  }
+}

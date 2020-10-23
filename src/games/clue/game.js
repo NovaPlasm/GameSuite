@@ -89,6 +89,10 @@ function IsVictory(cells) {
 }
 
 function MakeGuess(G, ctx, suspect, weapon, room) {
+  let log = [...G.log];
+  log.push(`;bPlayer ${ctx.playOrderPos} is making a guess:`);
+  log.push(`Suspect: ${suspect}, Weapon: ${weapon}, Room: ${room}`);
+  log.push('\n');
 
   // guard to set nextPlayer to '0' if needed
   const nextPlayer = (ctx.playOrderPos + 1 === ctx.playOrder.length ? 0 : ctx.playOrderPos + 1);
@@ -116,17 +120,20 @@ function MakeGuess(G, ctx, suspect, weapon, room) {
     cells[newLoc] = effectedPlayer;
     locations[effectedPlayer] = newLoc;
 
-    return { ...G, cells, locations, nextPlayer, guessedCards };
+    return { ...G, cells, locations, nextPlayer, guessedCards, log };
   } else {
-    return { ...G, nextPlayer, guessedCards}
+    return { ...G, nextPlayer, guessedCards, log };
   }
 }
 
 function MakeAccusation(G, ctx, suspect, weapon, room) {
-
-  const [solSuspect, solWeapon, solRoom] = G.solutionAndCards.solution
-  if (solSuspect === suspect && solWeapon === weapon && solRoom === room) ctx.events.endGame(ctx.currentPlayer)
+  G.log.push(`;bPlayer ${ctx.playOrderPos} is making an accusation:`);
+  G.log.push(`Suspect: ${suspect}, Weapon: ${weapon}, Room: ${room}`);
+  G.log.push('\n');
+  const [solSuspect, solWeapon, solRoom] = G.solutionAndCards.solution;
+  if (solSuspect === suspect && solWeapon === weapon && solRoom === room) ctx.events.endGame(ctx.currentPlayer);
   else {
+    G.log.push(`Player ${ctx.playOrderPos} was incorrect!`);
     ctx.events.endTurn();
     let accusedPlayers = [...G.accusedPlayers];
     accusedPlayers[ctx.currentPlayer] = ctx.currentPlayer;
@@ -142,6 +149,7 @@ function ChooseOrPass(G, ctx, card) {
   G.nextPlayer = nextPlayer;
 
   if (card === "Pass") {
+    G.log.push(`Player ${currentPlayer} didn't have a card`);
     if (ctx.playOrderPos === nextPlayer) {
       ctx.events.endStage();
       ctx.events.endTurn();
@@ -160,6 +168,7 @@ function ChooseOrPass(G, ctx, card) {
       }
     });
   } else {
+    G.log.push(`Player ${currentPlayer} had a card`);
     G.showedCards[ctx.playOrderPos] = {[currentPlayer]: card};
     ctx.events.endStage();
   }
@@ -207,7 +216,8 @@ const Clue = {
     locations: playerLocations(),
     showedCards: new Array(ctx.numPlayers).fill(null),
     solutionAndCards: shuffledCards(),
-    guessedCards: new Array(3)
+    guessedCards: new Array(3),
+    log: []
   }),
 
   moves: {

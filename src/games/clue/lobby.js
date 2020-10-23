@@ -13,9 +13,7 @@ const importedGames = [
 ];
 
 const LobbyView = () => (
-  <div style={{ padding: 50 }}>
-    <h1>Lobby</h1>
-
+  <div>
     <Lobby
       gameServer={`http://${hostname}:8000`}
       lobbyServer={`http://${hostname}:8000`}
