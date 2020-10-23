@@ -197,9 +197,9 @@ class Board extends React.Component {
   }
 
   onGuessChosen(suspect, weapon, room) {
+    this.props.moves.MakeGuess(suspect, weapon, room);
     this.setGuessModalShow(false);
     this.setState({alreadyGuessed: true});
-    this.props.moves.MakeGuess(suspect, weapon, room);
   }
 
   setAccusationModalShow(show) {
@@ -217,13 +217,13 @@ class Board extends React.Component {
   }
 
   onCardChosen(card) {
-    this.setChooseModalShow(false);
     this.props.moves.ChooseOrPass(card);
+    this.setChooseModalShow(false);
   }
 
   onShownCard() {
-    this.setState({showCardModal: false});
     this.props.moves.ClearShowedCards();
+    this.setState({showCardModal: false});
   }
 
   sheetTab(sheet) {
@@ -248,7 +248,6 @@ class Board extends React.Component {
       this.setState({showWinner: this.props.ctx.gameover})
     } else {
       if (this.props.playerID === this.props.ctx.currentPlayer && this.props.G.accusedPlayers.includes(this.props.playerID)) {
-        console.log('test');
         this.props.events.endTurn();
       }
       else if (!this.state.notifiedTurn && this.props.playerID === this.props.ctx.currentPlayer) this.setState({notifiedTurn: true, showModal: true, alreadyGuessed: false});
@@ -275,6 +274,7 @@ class Board extends React.Component {
             } : null}
             onClick={() => this.onClick(id)}
           >
+            {this.props.G.cells[id]}
           </td>
         );
       }
@@ -478,6 +478,7 @@ class GuessPopup extends React.Component {
 
     return (
       <Modal
+        show={this.props.show}
         {...this.props}
         size="lg"
         aria-labelledby="contained-modal-title-vcenter"
@@ -581,6 +582,7 @@ class AccusationPopup extends React.Component {
 
     return (
       <Modal
+        show={this.props.show}
         {...this.props}
         size="lg"
         aria-labelledby="contained-modal-title-vcenter"
@@ -621,7 +623,8 @@ class ChooseOrPassPopup extends React.Component {
     super(props);
 
     this.state = {
-      chosenCard: null
+      chosenCard: null,
+      display: true
     };
   }
 
@@ -640,17 +643,16 @@ class ChooseOrPassPopup extends React.Component {
 
   buttonClicked(card) {
     this.props.onHide(card);
-    this.setState({chosenCard: null});
+    this.setState({chosenCard: null, display: false});
   }
 
   render() {
-    const { chosenCard } = this.state;
-
-    console.log(this.props.playerCards);
+    const { chosenCard, display } = this.state;
 
     return (
       <Modal
         {...this.props}
+        show={this.props.show && display}
         size="lg"
         aria-labelledby="contained-modal-title-vcenter"
         centered
@@ -708,6 +710,7 @@ class ShownCardPopup extends React.Component {
     return (
       <Modal
         {...this.props}
+        show={this.props.show}
         size="lg"
         aria-labelledby="contained-modal-title-vcenter"
         centered

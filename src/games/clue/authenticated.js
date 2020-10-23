@@ -19,7 +19,7 @@ const App = Client({
   game: Clue,
   board: Board,
   debug: false,
-  multiplayer: SocketIO({ server: `${hostname}:8000` }),
+  multiplayer: SocketIO({ server: `${hostname}:5000` }),
 });
 
 class AuthenticatedClient extends React.Component {
@@ -46,7 +46,7 @@ class AuthenticatedClient extends React.Component {
 
   async componentDidMount() {
     const gameName = 'clue';
-    const PORT = 8000;
+    const PORT = 5000;
 
     const newGame = await request
       .post(`http://${hostname}:${PORT}/games/${gameName}/create`)

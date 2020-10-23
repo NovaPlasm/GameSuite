@@ -38,7 +38,7 @@ function shuffledCards() {
 }
 
 function activeCells(numPlayers) {
-  let cells = new Array(25).fill("");
+  let cells = new Array(25*24).fill("");
 
   // for (let i = 0; i < 25; i++) {
   //   for (let j = 0; j < 25; j++) {
@@ -80,7 +80,6 @@ function activeCells(numPlayers) {
   for (let i = 0; i < numPlayers; i++) {
     cells[playerLoc[i]] = i.toString();
   }
-
   return cells;
 }
 
@@ -111,9 +110,7 @@ function MakeGuess(G, ctx, suspect, weapon, room) {
     let cells = [...G.cells];
     let locations = [...G.locations];
 
-    console.log(room,doors());
     const door = doors()[room][0];
-    console.log(door);
     const newLoc = roomLocation(door[0]*25 + door[1], effectedPlayer.toString())
 
     cells[locations[effectedPlayer]] = null;
