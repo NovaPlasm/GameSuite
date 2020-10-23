@@ -124,20 +124,21 @@ function MakeGuess(G, ctx, suspect, weapon, room) {
 }
 
 function MakeAccusation(G, ctx, suspect, weapon, room) {
-  G.log.push(`;bPlayer ${ctx.playOrderPos} is making an accusation:`);
-  G.log.push(`Suspect: ${suspect}, Weapon: ${weapon}, Room: ${room}`);
-  G.log.push('\n');
+  let log = [...G.log];
+  log.push(`;bPlayer ${ctx.playOrderPos} is making an accusation:`);
+  log.push(`Suspect: ${suspect}, Weapon: ${weapon}, Room: ${room}`);
+  log.push('\n');
   const [solSuspect, solWeapon, solRoom] = G.solutionAndCards.solution;
   if (solSuspect === suspect && solWeapon === weapon && solRoom === room) ctx.events.endGame(ctx.currentPlayer);
   else {
-    G.log.push(`Player ${ctx.playOrderPos} was incorrect!`);
+    log.push(`Player ${ctx.playOrderPos} was incorrect!`);
     ctx.events.endTurn();
     let accusedPlayers = [...G.accusedPlayers];
     accusedPlayers[ctx.currentPlayer] = ctx.currentPlayer;
 
-    return { ...G, accusedPlayers}
+    return { ...G, accusedPlayers, log}
   }
-  return { ...G };
+  return { ...G, log };
 }
 
 function ChooseOrPass(G, ctx, card) {
